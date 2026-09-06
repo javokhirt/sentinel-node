@@ -1,0 +1,15 @@
+#excluding the build artifacts
+*.o
+*.elf
+*.bin
+
+build/
+# /build/ --> only at the root
+
+#IDE junk
+/.vscode
+
+
+# OS junk
+.DS_Store
+Thumbs.db

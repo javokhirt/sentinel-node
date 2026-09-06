@@ -1,16 +1,19 @@
 #Makefile for STM32f411retx project
 
 #Project Configuration
-Target = firmware
-Build_Dir = ./Source/Build
-Common = ../Setup
+Target = sentinel-node
+Build_Dir = ./build
+Common = .
 Hardware = STM32F411RE
 
 #Common is a path to linker script, satrtup file, and header files
 
 #Source Files
-C_Sources = ./Source/main.c ./Source/uart.c ./Source/tim.c
-ASM_Sources = $(Common)/startup_stm32f411retx.s
+C_Sources = $(wildcard app/*.c) \
+            $(wildcard drivers/*.c) \
+			$(wildcard platform/*.c)
+			
+ASM_Sources = $(Common)/platform/startup_stm32f411retx.s
 
 #Toolchain 
 Prefix = arm-none-eabi-
@@ -40,15 +43,15 @@ CFLAGS += -Os
 CFLAGS += -g3 -gdwarf-2 #all the deatils of this flags can be found in the 00-toolchain-setup/Makefile
 
 #Include Paths
-CFLAGS += -I./Include/
-CFLAGS += -I$(Common)/../shared_files/chip_headers/CMSIS/Include
-CFLAGS += -I$(Common)/../shared_files/chip_headers/CMSIS/Device/ST/STM32F4xx/Include
+CFLAGS += -I $(Common)/vendor/CMSIS/Include
+CFLAGS += -I $(Common)/vendor/CMSIS/Device/ST/STM32F4xx/Include
+CFLAGS += -DSTM32F411xE
 
 #Assembler Flags
 ASFLAGS += $(MCU) -g3 -gdwarf-2
 
 #Linker Flags
-LDSCRIPT = $(Common)/stm32f411retx_flash.ld
+LDSCRIPT = $(Common)/platform/stm32f411retx_flash.ld
 LDFLAGS = $(MCU)
 LDFLAGS += -T $(LDSCRIPT)
 LDFLAGS += --specs=nosys.specs  # No OS system calls
@@ -110,7 +113,7 @@ flash: $(Build_Dir)/$(Target).bin | $(Build_Dir)
 
 # ---- Start OpenOCD debug server ----
 openocd:
-	openocd -f $(Common)/openocd.cfg
+	openocd -f $(Common)/tools/openocd.cfg
 
 #Launch GDB
 debug: $(Build_Dir)/$(Target).elf

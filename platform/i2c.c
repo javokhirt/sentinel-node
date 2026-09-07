@@ -1,10 +1,17 @@
 #include "i2c.h"
 
-
 #define GPIOBEN     (1U<<1)
 #define I2C1EN      (1U<<21)
-#define I2C1_CR1_EN  (1U<<0);
+#define I2C1_CR1_EN  (1U<<0)
+#define I2C1_CR1_START  (1U<<8)
+#define I2C1_CR1_ACK    (1U<<10)
+#define I2C1_CR1_STOP   (1U<<9)
 
+#define I2C1_SR1_SB   (1U<<0)
+#define I2C1_SR1_ADDR (1U<<1)
+#define I2C1_SR1_TXE  (1U<<7)
+#define I2C1_SR1_RXNE  (1U<<6)
+#define I2C1_SR2_BUSY (1U<<1)
 
 void I2C1_Init(void) {
     
@@ -44,5 +51,71 @@ void I2C1_Init(void) {
 
     // enable the I2C1
     I2C1->CR1 |= I2C1_CR1_EN;
+
+}
+
+void (char saddr, char maddr, char* data) {
+    volatile int tmp;
+
+    // poll for I2C1 SR2 until it's not busy
+    while (I2C1->SR2 & I2C1_SR2_BUSY) {
+        // do nothing!
+    }
+    // generate the start condition
+    I2C1->CR1 = I2C1_CR1_START;
+
+    //poll for I2C1 SR1 until the start flag is set
+    while (!(I2C1->SR1 & I2C1_SR1_SB)) {
+        // do nothing!
+    }
+    // send the slave adress and write
+    I2C1->DR = saddr << 1;
+
+    // poll for I2C1 SR1 until the address flag is set
+    while (!(I2C1->SR1 & I2C1_SR1_ADD)) {
+        // do nothing!
+    }
+    // clear the address flag by reading SR2
+    tmp = I2C1->SR2
+
+    // send memory address
+    I2C1->DR = maddr;
+
+    // poll for I2C1 SR1 until the TXE flag is set
+    while (!(I2C1->SR1 & I2C1_SR1_TXE)) {
+        // do nothing!
+    }
+
+    // ----------------------- end of the first transaction -----------------------
+    // generate the restart condition
+    I2C1->CR1 = I2C1_CR1_START;
+
+    //poll for I2C1 SR1 until the start flag is set
+    while (!(I2C1->SR1 & I2C1_SR1_SB)) {
+        // do nothing!
+    }
+    // send the slave adress and start reading
+    I2C1->DR = (saddr << 1) | 1;
+
+    // poll for I2C1 SR1 until the address flag is set
+    while (!(I2C1->SR1 & I2C1_SR1_ADDR)) {
+        // do nothing!
+    }
+    // disable the acknowledge
+    I2C1->CR1 &=~ I2C1_CR1_ACK;
+
+    // clear the address flag by reading SR2
+    tmp = I2C1->SR2
+
+    //set the stop condition
+    I2C1->CR1 |= I2C1_CR1_STOP;
+
+    // wait until the DR register is not empty
+    while (!(I2C1_SR1_RXNE & I2C1_SR1_RXNE)) {
+        // do nothing!
+    }
+    // read and assign the data to the variable
+    *data = I2C1->DR;
+
 
 }

@@ -1,4 +1,6 @@
 #include "i2c.h"
+#include "stm32f4xx.h"
+#include <stdint.h>
 
 #define GPIOBEN     (1U<<1)
 #define I2C1EN      (1U<<21)
@@ -77,7 +79,7 @@ void I2C1_byteRead (char saddr, char maddr, char* data) {
         // do nothing!
     }
     // clear the address flag by reading SR2
-    tmp = I2C1->SR2
+    tmp = I2C1->SR2;
 
     // send memory address
     I2C1->DR = maddr;
@@ -106,27 +108,27 @@ void I2C1_byteRead (char saddr, char maddr, char* data) {
     I2C1->CR1 &=~ I2C1_CR1_ACK;
 
     // clear the address flag by reading SR2
-    tmp = I2C1->SR2
+    tmp = I2C1->SR2;
 
     //set the stop condition
     I2C1->CR1 |= I2C1_CR1_STOP;
 
     // wait until the DR register is not empty
-    while (!(I2C1_SR1_RXNE & I2C1_SR1_RXNE)) {
+    while (!(I2C1->SR1 & I2C1_SR1_RXNE)) {
         // do nothing!
     }
     // read and assign the data to the variable
-    *data++ = I2C1->DR;
+    *data = I2C1->DR;
 }
 
 
 
-void I2C1_burstRead (char saddr, char maddr, int numBytes, char* data) {
+void I2C1_burstRead (char saddr, char maddr, int n, char* data) {
 
     volatile int tmp;
     
     // poll for I2C SR2 until it's not busy
-    while (!(I2C1->SR2 & I2C1_SR2_BUSY)) {
+    while (I2C1->SR2 & I2C1_SR2_BUSY) {
         // do nothing!
     }
     // set the start condition
@@ -161,7 +163,7 @@ void I2C1_burstRead (char saddr, char maddr, int numBytes, char* data) {
     I2C1->CR1 |= I2C1_CR1_START;
 
     // pol until the SR1 SB flag is set
-    while (I2C1->SR1 & I2C1_SR1_SB) {
+    while (!(I2C1->SR1 & I2C1_SR1_SB)) {
         // do nothing!
     }
     // transmit the slave adress and read
@@ -240,11 +242,11 @@ void I2C1_burstWrite (char saddr, char maddr, int n, char* data) {
         }
         I2C1->DR = *data++;
     }
-    // poll untile the BTF flag is set
+    // poll until the BTF flag is set
     while (!(I2C1->SR1 & I2C1_SR1_BTF)){
         // do nothing!
     }
-    
+
     // generare STOP
     I2C1->CR1 |= I2C1_CR1_STOP;
     

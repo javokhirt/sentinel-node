@@ -11,6 +11,7 @@
 #define I2C1_SR1_ADDR (1U<<1)
 #define I2C1_SR1_TXE  (1U<<7)
 #define I2C1_SR1_RXNE  (1U<<6)
+#define I2C1_SR1_BTF   (1U<<2)
 #define I2C1_SR2_BUSY (1U<<1)
 
 void I2C1_Init(void) {
@@ -145,6 +146,9 @@ void I2C1_burstRead (char saddr, char maddr, int numBytes, char* data) {
     // clear the address flag
     tmp = I2C1->SR2;
 
+    // enable the ACK bit, so the hardware sends ACK everytime a byte arrives in your DR register
+    I2C1->CR1 |= I2C1_CR1_ACK; // we aren't sending it manually
+    
     // transmit the maddr
     I2C1->DR = maddr;
     
@@ -169,9 +173,6 @@ void I2C1_burstRead (char saddr, char maddr, int numBytes, char* data) {
     }
     // clear the adress flag
     tmp = I2C1->SR2;
-
-    // enable the ACK bit
-    I2C1->CR1 |= I2C1_CR1_ACK;
 
     while (n > 0U) {
         // if one byte
@@ -198,9 +199,53 @@ void I2C1_burstRead (char saddr, char maddr, int numBytes, char* data) {
             n--;
         }
     }
+}
+
+void I2C1_burstWrite (char saddr, char maddr, int n, char* data) {
+    volatile int tmp;
+    // wait until the Busy flag is set
+    while (I2C1->SR2 & I2C1_SR2_BUSY){
+        // do nothing!
+    }
+    //set the START flag
+    I2C1->CR1 |= I2C1_CR1_START;
+
+    // poll until the SB is set
+    while (!(I2C1->SR1 & I2C1_SR1_SB)) {
+        // do nothing!
+    }
+    // transmit the saddr and Write 
+    I2C1->DR = (saddr<<1);
+
+    // poll until the address bit is set
+    while (!(I2C1->SR1 & I2C1_SR1_ADDR)) {
+        // do nothing!
+    }
+    // clear the address bit
+    tmp = I2C1->SR2;
+
+    // send the memory adress
+    I2C1->DR = maddr;
+
+    // poll until the TXE flag is set
+    while (!(I2C1->SR1 & I2C1_SR1_TXE)) {
+        // do nothing!
+    }
+    // no Restart Condition this time!!!
+
+    for (int i = 0; i < n; i++) {
+        // poll until the TXE flag is set
+        while (!(I2C1->SR1 & I2C1_SR1_TXE)) {
+            // do nothing!
+        }
+        I2C1->DR = *data++;
+    }
+    // poll untile the BTF flag is set
+    while (!(I2C1->SR1 & I2C1_SR1_BTF)){
+        // do nothing!
+    }
     
-
-
-
-
+    // generare STOP
+    I2C1->CR1 |= I2C1_CR1_STOP;
+    
 }

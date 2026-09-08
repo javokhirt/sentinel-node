@@ -54,25 +54,25 @@ void I2C1_Init(void) {
 
 }
 
-void (char saddr, char maddr, char* data) {
+void I2C1_byteRead (char saddr, char maddr, char* data) {
     volatile int tmp;
-
+// ------------------------------------- The START Condition
     // poll for I2C1 SR2 until it's not busy
     while (I2C1->SR2 & I2C1_SR2_BUSY) {
         // do nothing!
     }
     // generate the start condition
-    I2C1->CR1 = I2C1_CR1_START;
+    I2C1->CR1 |= I2C1_CR1_START;
 
     //poll for I2C1 SR1 until the start flag is set
     while (!(I2C1->SR1 & I2C1_SR1_SB)) {
         // do nothing!
     }
-    // send the slave adress and write
+    // send the slave adress and WRITE
     I2C1->DR = saddr << 1;
 
     // poll for I2C1 SR1 until the address flag is set
-    while (!(I2C1->SR1 & I2C1_SR1_ADD)) {
+    while (!(I2C1->SR1 & I2C1_SR1_ADDR)) {
         // do nothing!
     }
     // clear the address flag by reading SR2
@@ -86,9 +86,9 @@ void (char saddr, char maddr, char* data) {
         // do nothing!
     }
 
-    // ----------------------- end of the first transaction -----------------------
+    // ----------------------- The RESTART Condition -----------------------
     // generate the restart condition
-    I2C1->CR1 = I2C1_CR1_START;
+    I2C1->CR1 |= I2C1_CR1_START;
 
     //poll for I2C1 SR1 until the start flag is set
     while (!(I2C1->SR1 & I2C1_SR1_SB)) {
@@ -115,7 +115,92 @@ void (char saddr, char maddr, char* data) {
         // do nothing!
     }
     // read and assign the data to the variable
-    *data = I2C1->DR;
+    *data++ = I2C1->DR;
+}
+
+
+
+void I2C1_burstRead (char saddr, char maddr, int numBytes, char* data) {
+
+    volatile int tmp;
+    
+    // poll for I2C SR2 until it's not busy
+    while (!(I2C1->SR2 & I2C1_SR2_BUSY)) {
+        // do nothing!
+    }
+    // set the start condition
+    I2C1->CR1 |= I2C1_CR1_START;
+
+    // poll until the (SB) flag is set
+    while (!(I2C1->SR1 & I2C1_SR1_SB)) {
+        // do nothing!
+    }
+    // transmit the slave adress and write
+    I2C1->DR = (saddr << 1);
+
+    // poll until the address flag is set
+    while (!(I2C1->SR1 & I2C1_SR1_ADDR)) {
+        // do nothing!
+    }
+    // clear the address flag
+    tmp = I2C1->SR2;
+
+    // transmit the maddr
+    I2C1->DR = maddr;
+    
+    // poll the SR1 until the TXE flag is set
+    while (!(I2C1->SR1 & I2C1_SR1_TXE)) {
+        // do nothing!
+    }
+    //------------------------------------ The RESTART Condition ----------------------------------------
+    // generate the restart condition
+    I2C1->CR1 |= I2C1_CR1_START;
+
+    // pol until the SR1 SB flag is set
+    while (I2C1->SR1 & I2C1_SR1_SB) {
+        // do nothing!
+    }
+    // transmit the slave adress and read
+    I2C1->DR = (saddr<<1) | 1;
+
+    // poll until the adress flag is set
+    while (!(I2C1->SR1 & I2C1_SR1_ADDR)){
+        // do nothing!
+    }
+    // clear the adress flag
+    tmp = I2C1->SR2;
+
+    // enable the ACK bit
+    I2C1->CR1 |= I2C1_CR1_ACK;
+
+    while (n > 0U) {
+        // if one byte
+        if (n == 1) {
+            // disable the ACK
+            I2C1->CR1 &=~ I2C1_CR1_ACK;
+            // generare STOP
+            I2C1->CR1 |= I2C1_CR1_STOP;
+            // wait for RNXE flag is set
+            while (!(I2C1->SR1 & I2C1_SR1_RXNE)){
+                // do nothing!
+            }
+            // read the data
+            *data++ = I2C1->DR;
+            break;
+        }
+        else {
+            // wait until the RXNE flag is set
+            while (!(I2C1->SR1 & I2C1_SR1_RXNE)){
+                // do nothing!
+            }
+            // read the data
+            *data++ = I2C1->DR;
+            n--;
+        }
+    }
+    
+
+
 
 
 }

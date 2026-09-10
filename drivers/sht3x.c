@@ -8,3 +8,5 @@ char measureHigh[2] = {0x24, 0x00}; //allow 15ms of delay for sensor to measure
 
 
 // you should wait 15ms before the next command
+
+uint8_t raw_temp = (data[1]<<8 | data[0]);

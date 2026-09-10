@@ -16,7 +16,7 @@
 #define I2C1_SR1_BTF   (1U<<2)
 #define I2C1_SR2_BUSY (1U<<1)
 
-void I2C1_Init(void) {
+void i2c1_init(void) {
 
     RCC->AHB1ENR |= GPIOBEN;
     /* PB8 = SCL, PB9 = SDA, AF4 */
@@ -47,8 +47,8 @@ void I2C1_Init(void) {
     I2C1->CR1 |= I2C1_CR1_EN;
 
 }
-
-void i2c1_read (uint8_t saddr, int n, char* data) {
+// only accepts n>=3
+void i2c1_read (uint8_t saddr, uint16_t n, uint8_t* data) {
 
     volatile int tmp;
 
@@ -62,31 +62,30 @@ void i2c1_read (uint8_t saddr, int n, char* data) {
 
     while (!(I2C1->SR1 & I2C1_SR1_ADDR)) {
     }
-    tmp = I2C1->SR2;
-
     /* Hardware ACK after each received byte until the last */
     I2C1->CR1 |= I2C1_CR1_ACK;
+    
+    tmp = I2C1->SR2;
 
-    while (n > 0U) {
-        if (n == 1) {
-            /* Last byte: NACK then STOP, then read DR */
-            I2C1->CR1 &=~ I2C1_CR1_ACK;
-            I2C1->CR1 |= I2C1_CR1_STOP;
-            while (!(I2C1->SR1 & I2C1_SR1_RXNE)){
-            }
-            *data = I2C1->DR;
-            break;
+
+    while (n > 3U) {
+        while (!(I2C1->SR1 & I2C1_SR1_RXNE)){
         }
-        else {
-            while (!(I2C1->SR1 & I2C1_SR1_RXNE)){
-            }
-            *data++ = I2C1->DR;
-            n--;
-        }
+        *data++ = I2C1->DR;
+        n--;
     }
+    
+    while (!(I2C1->SR1 & I2C1_SR1_BTF)){}
+    I2C1->CR1 &=~ I2C1_CR1_ACK;
+    *data++ = I2C1->DR;
+    I2C1->CR1 |= I2C1_CR1_STOP;
+    *data++ = I2C1->DR; // read byte before the last one
+    while (!(I2C1->SR1 & I2C1_SR1_RXNE)){}
+    *data = I2C1->DR; // read the last byte
+
 }
 
-void i2c1_write (uint8_t saddr, int n, char* data) {
+void i2c1_write (uint8_t saddr, uint16_t n, const uint8_t* data) {
     volatile int tmp;
 
     while (I2C1->SR2 & I2C1_SR2_BUSY){

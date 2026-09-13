@@ -45,6 +45,9 @@ CFLAGS += -g3 -gdwarf-2 #all the deatils of this flags can be found in the 00-to
 #Include Paths
 CFLAGS += -I $(Common)/vendor/CMSIS/Include
 CFLAGS += -I $(Common)/vendor/CMSIS/Device/ST/STM32F4xx/Include
+CFLAGS += -I $(Common)/app
+CFLAGS += -I $(Common)/drivers
+CFLAGS += -I $(Common)/platform
 CFLAGS += -DSTM32F411xE
 
 #Assembler Flags
@@ -109,7 +112,7 @@ $(Build_Dir):
 # Order of args inside `program`: <file> [offset] verify reset exit
 flash: $(Build_Dir)/$(Target).bin | $(Build_Dir)
 	@echo "Flashing the $< to the $(Hardware) board!!!"
-	openocd -f $(Common)/openocd.cfg -c "program $< 0x08000000 verify reset exit"
+	openocd -f $(Common)/tools/openocd.cfg -c "program $< 0x08000000 verify reset exit"
 
 # ---- Start OpenOCD debug server ----
 openocd:

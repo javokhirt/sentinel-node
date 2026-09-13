@@ -15,3 +15,4 @@ build/
 Thumbs.db
 
 *.pdf
+tests/build/

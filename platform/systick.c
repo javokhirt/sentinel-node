@@ -25,7 +25,7 @@ void systick_delay_ms(int delay_ms) {
 
     for (volatile int i=0; i<delay_ms; i++) {
         while ((SysTick->CTRL & CTRL_COUNTERFLAG) == 0){
-            // do nothing!!!
+            // poll
         }
 
     }

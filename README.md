@@ -11,7 +11,9 @@ building. Temperature and humidity first, then more node types, then enough
 deployed hardware to train models on real greenhouse data. Ideas are cheap.
 This is the part that isn't.
 
-![Live readings over UART](docs/media/readings.gif)
+<p align="center">
+  <img src="docs/media/readings.gif" width="700">
+</p>
 
 ## What it does
 

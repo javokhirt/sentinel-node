@@ -1,0 +1,2 @@
+vendor/** linguist-vendored
+platform/startup_*.s linguist-vendored

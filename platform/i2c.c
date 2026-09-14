@@ -47,7 +47,8 @@ void i2c1_init(void) {
     I2C1->CR1 |= I2C1_CR1_EN;
 
 }
-// only accepts n>=3
+
+/* n must be >= 3: last three bytes use the F4 NACK/STOP/BTF sequence. */
 void i2c1_read (uint8_t saddr, uint16_t n, uint8_t* data) {
 
     volatile int tmp;
@@ -75,13 +76,14 @@ void i2c1_read (uint8_t saddr, uint16_t n, uint8_t* data) {
         n--;
     }
     
+    /* NACK, drain DR, STOP, then the last two bytes (RM0383 I2C master receiver). */
     while (!(I2C1->SR1 & I2C1_SR1_BTF)){}
     I2C1->CR1 &=~ I2C1_CR1_ACK;
     *data++ = I2C1->DR;
     I2C1->CR1 |= I2C1_CR1_STOP;
-    *data++ = I2C1->DR; // read byte before the last one
+    *data++ = I2C1->DR;
     while (!(I2C1->SR1 & I2C1_SR1_RXNE)){}
-    *data = I2C1->DR; // read the last byte
+    *data = I2C1->DR;
 
 }
 

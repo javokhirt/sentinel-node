@@ -24,18 +24,14 @@ ssize_t _write(int file, const char *ptr, ssize_t len) {
     return len;
 }
 void uart2_init(void) {
-    // 1. Enable clock access to GPIOA
     RCC->AHB1ENR |= GPIOAEN;
-    // 2. Set PA2 to alternate function mode
+    /* PA2 = USART2_TX, AF7 */
     GPIOA->MODER |= (1U<<5);
     GPIOA->MODER &=~ (1U<<4);
-    // 3. Set PA2 alternate function type to UART_TX (AF07)
     GPIOA->AFR[0] |= (1U<<8);
     GPIOA->AFR[0] |= (1U<<9);
     GPIOA->AFR[0] |= (1U<<10);
     GPIOA->AFR[0] &=~ (1U<<11);
-
-
 
     RCC->APB1ENR |= USART2EN;
 
@@ -48,7 +44,6 @@ void uart2_init(void) {
 
 static void usart2_write(int ch) {
     while (!(USART2->SR & SR_TXE))  {
-        // poll
     }
     USART2->DR = (ch & 0xFF);
 }

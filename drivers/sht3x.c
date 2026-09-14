@@ -17,7 +17,7 @@
 #define CMD_HEATER_ON           0x306DU
 #define CMD_HEATER_OFF          0x3066U
 
-#define MEAS_TIME_HIGH_MS       15U     // measuring time
+#define MEAS_TIME_HIGH_MS       15U     /* high-repeatability conversion, Table 5 */
 #define RESET_TIME_MS           2U      /* 1.5 ms max, rounded up */
 
 

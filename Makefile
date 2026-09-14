@@ -27,10 +27,6 @@ GDB = $(Prefix)gdb
 
 #------------------------------------------------------------------------------------------------
 
-#MCU Flags
-#-mcpu=cortex-m4 --> targets the cortex m4 core
-#-mthumb --> uses the thumb instructions for function calls
-#-mfloat-abi=soft --> uses the soft floating point ABI
 MCU = -mcpu=cortex-m4 -mthumb -mfloat-abi=soft
 
 #Compiler Flags
@@ -40,7 +36,7 @@ CFLAGS += -Wall -Wextra -Wpedantic -Wshadow
 CFLAGS += -Wdouble-promotion -Wformat=2 -Wformat-truncation
 CFLAGS += -fno-common -ffunction-sections -fdata-sections
 CFLAGS += -Os
-CFLAGS += -g3 -gdwarf-2 #all the deatils of this flags can be found in the 00-toolchain-setup/Makefile
+CFLAGS += -g3 -gdwarf-2
 
 #Include Paths
 CFLAGS += -I $(Common)/vendor/CMSIS/Include

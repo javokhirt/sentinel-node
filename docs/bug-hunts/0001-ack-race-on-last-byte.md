@@ -1,6 +1,6 @@
 # 0001 — The last byte of an I2C read was a race, and I didn't know it
 
-**Date:** 2026-09-10
+**Date:** 2026-09-10, confirmed on hardware 2026-09-13
 **Found by:** reading RM0383 §18.3.3 carefully, before it ever ran on hardware
 
 ## The code I wrote
@@ -93,18 +93,42 @@ running the tail sequence and overrunning the caller's buffer.
 I'll write those cases when I add a second device to the bus. Most chips want a
 1-byte read for a WHO_AM_I check, so it'll probably be soon.
 
-## What I want to check on hardware
+## Confirmed on hardware
 
-None of this is confirmed on real silicon yet — the boards aren't here and I
-haven't run it. When the logic analyzer arrives:
+Captured a measurement read on a Saleae with the I2C analyzer on:
 
-- capture a full 6-byte read and confirm byte 6 is NACKed, not ACKed
-- confirm SCL actually goes low and stays there during the BTF window
-- deliberately re-introduce the old loop and see whether I can catch it ACKing
-  the last byte, maybe by bumping the bus to 400 kHz to make the race tighter
+![I2C read capture](../media/i2c-capture.png)
 
-If the old version turns out to work fine at every speed I can test, that's
-worth writing down too.
+Six bytes come back and the last one is NAKed. Every earlier byte decodes as
+`+ ACK`, byte six as `0x0A + NAK`. That is what the BTF sequence exists to
+guarantee, and it is the part I could not have verified any other way.
+
+The frame itself checks out end to end:
+
+```
+6A 68 38   B4 2E 0A
+│  │  │    │  │  └── CRC over B4 2E
+│  │  │    └──┴───── raw RH  = 0xB42E = 46126  ->  70.38 %RH
+│  │  └───────────── CRC over 6A 68
+└──┴──────────────── raw T   = 0x6A68 = 27240  ->  27.74 °C
+```
+
+Both checksums recompute correctly against the bytes on the wire.
+
+The analog traces are worth a look too. SDA falls sharply and rises on a curve
+— that is open-drain I2C made visible. The bus can only be pulled down actively;
+the rise is passive, charging through the pull-up resistor on the breakout.
+
+Still to check: whether SCL genuinely sits low through the BTF window, and
+whether the old loop can be caught ACKing byte 6 if I push the bus to 400 kHz
+to tighten the race. This capture starts mid-transaction, so it does not show
+the START, the address byte, or the STOP either.
+
+Worth saying plainly: **I never saw the old version fail.** The code went from
+the fix straight to working hardware, so I have no evidence it would have broken
+in practice. It would almost certainly have worked on my desk. That is the
+reason it is worth writing down — it would have worked until it didn't,
+somewhere else, for a reason that looked unrelated.
 
 ## What I take from this
 

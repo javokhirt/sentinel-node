@@ -1,8 +1,3 @@
-# Host tests. Plain gcc, no ARM toolchain, no board.
-#
-#   make        build and run
-#   make clean
-#
 # Only files with zero hardware dependencies can be built here. Anything
 # that includes stm32f4xx.h will not compile on the host, by design.
 
